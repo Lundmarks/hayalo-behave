@@ -99,7 +99,7 @@ class Score(commands.Cog):
         await db.set_dm_notify(interaction.user.id, not current)
         status = "disabled" if current else "enabled"
         await interaction.response.send_message(
-            f"DM notifications **{status}**.", ephemeral=True
+            f"DM notifications **{status}**."
         )
 
 

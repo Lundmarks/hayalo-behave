@@ -16,7 +16,7 @@ class Moderation(commands.Cog):
     @app_commands.command(name="mod-log", description="[MOD] View the 20 most recent score change events")
     async def mod_log(self, interaction: discord.Interaction) -> None:
         if not _is_mod(interaction):
-            await interaction.response.send_message("You need Manage Server permission.", ephemeral=True)
+            await interaction.response.send_message("You need Manage Server permission.", ephemeral=False)
             return
 
         events = await db.get_recent_events(interaction.guild_id, limit=20)
@@ -35,7 +35,7 @@ class Moderation(commands.Cog):
                 lines.append(f"`{ts}` **{name}** {sign}{delta} [{e['source']}] — {e['reason'][:60]}")
             embed.description = "\n".join(lines)
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
     @app_commands.command(name="mod-adjust", description="[MOD] Manually adjust a user's behaviour score")
     @app_commands.describe(
@@ -51,7 +51,7 @@ class Moderation(commands.Cog):
         reason: str,
     ) -> None:
         if not _is_mod(interaction):
-            await interaction.response.send_message("You need Manage Server permission.", ephemeral=True)
+            await interaction.response.send_message("You need Manage Server permission.", ephemeral=False)
             return
 
         await db.get_or_create_user(user.id, interaction.guild_id)
@@ -63,13 +63,13 @@ class Moderation(commands.Cog):
         sign = "+" if amount >= 0 else ""
         await interaction.response.send_message(
             f"Adjusted **{user.display_name}**: {old:,} → **{new:,}** ({sign}{amount})\nReason: {reason}",
-            ephemeral=True,
+            ephemeral=False,
         )
 
     @app_commands.command(name="mod-pending-reports", description="[MOD] List all unconfirmed reports in the last 24 hours")
     async def mod_pending_reports(self, interaction: discord.Interaction) -> None:
         if not _is_mod(interaction):
-            await interaction.response.send_message("You need Manage Server permission.", ephemeral=True)
+            await interaction.response.send_message("You need Manage Server permission.", ephemeral=False)
             return
 
         reports = await db.get_pending_reports(interaction.guild_id)
@@ -85,7 +85,7 @@ class Moderation(commands.Cog):
                 lines.append(f"`{r['timestamp'][:10]}` **{target_name}** — {r['reason'][:80]}")
             embed.description = "\n".join(lines)
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
 async def setup(bot: commands.Bot) -> None:

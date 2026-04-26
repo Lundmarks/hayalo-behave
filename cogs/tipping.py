@@ -57,10 +57,10 @@ class Tipping(commands.Cog):
         today = datetime.now(TZ).strftime("%Y-%m-%d")
 
         if user.bot:
-            await interaction.response.send_message("You cannot tip bots.", ephemeral=True)
+            await interaction.response.send_message("You cannot tip bots.")
             return
         if tipper_id == recipient_id:
-            await interaction.response.send_message("You cannot tip yourself.", ephemeral=True)
+            await interaction.response.send_message("You cannot tip yourself.")
             return
 
         tipper = await db.get_or_create_user(tipper_id, guild_id)
@@ -70,7 +70,6 @@ class Tipping(commands.Cog):
         if tracking["tips_given"] >= tip_limit:
             await interaction.response.send_message(
                 f"You have used all **{tip_limit}** of your daily tips. They reset at midnight (GMT+2).",
-                ephemeral=True,
             )
             return
 
