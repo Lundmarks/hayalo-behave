@@ -1,4 +1,5 @@
 import asyncio
+import io
 import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -6,6 +7,7 @@ from zoneinfo import ZoneInfo
 import discord
 from discord import app_commands
 from discord.ext import commands
+from gtts import gTTS
 
 import db.database as db
 from config import GAIN_TIP, TIMEZONE, DM_NOTIFY_THRESHOLD, TIP_SOUND_PATH
@@ -14,16 +16,28 @@ from utils.score_utils import get_tier
 TZ = ZoneInfo(TIMEZONE)
 
 
-async def _play_tip_sound(guild: discord.Guild, voice_channel: discord.VoiceChannel) -> None:
-    if not os.path.isfile(TIP_SOUND_PATH):
-        return
+def _make_tts(text: str) -> io.BytesIO:
+    buf = io.BytesIO()
+    gTTS(text=text, lang="en").write_to_fp(buf)
+    buf.seek(0)
+    return buf
+
+
+async def _play_tip_sound(guild: discord.Guild, voice_channel: discord.VoiceChannel, tts_text: str) -> None:
     if guild.voice_client and guild.voice_client.is_connected():
         return
 
     vc: discord.VoiceClient | None = None
     try:
         vc = await voice_channel.connect(timeout=10.0, reconnect=False)
-        vc.play(discord.FFmpegPCMAudio(TIP_SOUND_PATH))
+
+        if os.path.isfile(TIP_SOUND_PATH):
+            vc.play(discord.FFmpegPCMAudio(TIP_SOUND_PATH))
+            while vc.is_playing():
+                await asyncio.sleep(0.3)
+
+        tts_buf = await asyncio.get_event_loop().run_in_executor(None, _make_tts, tts_text)
+        vc.play(discord.FFmpegPCMAudio(tts_buf, pipe=True))
         while vc.is_playing():
             await asyncio.sleep(0.3)
     except Exception as e:
@@ -92,13 +106,17 @@ class Tipping(commands.Cog):
                 pass
 
         tips_remaining = tip_limit - tracking["tips_given"] - 1
-        await interaction.response.send_message(
-            f"Tipped **{user.display_name}**! Their score is now **{new:,} / 12,000**.\n"
-            f"You have **{tips_remaining}** tip(s) remaining today.",
-        )
+        msg = f"👍 Tipped **{user.display_name}**! Their score is now **{new:,} / 12,000**."
+        if note:
+            msg += f"\n> {note}"
+        msg += f"\n{interaction.user.display_name} has **{tips_remaining}** tip(s) remaining today."
+        await interaction.response.send_message(msg)
 
         if user.voice and user.voice.channel:
-            asyncio.create_task(_play_tip_sound(interaction.guild, user.voice.channel))
+            tts_text = f"Tip for {user.display_name}"
+            if note:
+                tts_text += f". {note}"
+            asyncio.create_task(_play_tip_sound(interaction.guild, user.voice.channel, tts_text))
 
 
 async def setup(bot: commands.Bot) -> None:
