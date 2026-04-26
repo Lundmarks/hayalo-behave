@@ -1,8 +1,23 @@
+import random
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 import db.database as db
+
+_REPORT_QUIPS = [
+    "⚖️ *The council has spoken.*",
+    "📉 *Another one bites the dust.*",
+    "🫵 *Someone saw what you did.*",
+    "🧂 *Salty behaviour detected.*",
+    "🏚️ *Low priority queue incoming.*",
+    "😬 *Yikes.*",
+    "🎭 *The community remembers.*",
+    "🪦 *RIP behaviour score.*",
+    "🤝 *This could have been avoided.*",
+    "🔔 *Ding ding ding — we have a problem.*",
+]
 from config import LOSS_REPORT, LOSS_SPAM_REPORT
 
 
@@ -55,16 +70,20 @@ class Reports(commands.Cog):
             f"Reported: {reason}", "report",
         )
 
+        announcement = (
+            f"🚨 **{user.display_name}** has been reported.\n"
+            f"**Reason:** {reason}\n"
+            f"Score: {old:,} → **{new:,}** / 12,000\n"
+            f"{random.choice(_REPORT_QUIPS)}"
+        )
+        await interaction.channel.send(announcement)
+
         config = await db.get_guild_config(guild_id)
         report_channel_id = config.get("report_channel_id") if config else None
-        if report_channel_id:
+        if report_channel_id and report_channel_id != interaction.channel_id:
             report_channel = interaction.guild.get_channel(report_channel_id)
             if report_channel:
-                await report_channel.send(
-                    f"🚨 **{user.display_name}** has been reported.\n"
-                    f"**Reason:** {reason}\n"
-                    f"Score: {old:,} → **{new:,}** / 12,000"
-                )
+                await report_channel.send(announcement)
 
         if await db.get_dm_notify(target_id):
             try:
