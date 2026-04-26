@@ -1,0 +1,8 @@
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./behave.db:/app/behave.db
+      - ./sounds:/app/sounds

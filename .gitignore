@@ -1,0 +1,27 @@
+# Environment & secrets
+.env
+
+# Runtime database
+behave.db
+
+# User-provided audio (potentially large binaries)
+sounds/*.mp3
+sounds/*.wav
+sounds/*.ogg
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

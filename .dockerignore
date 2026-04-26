@@ -1,0 +1,7 @@
+.env
+behave.db
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/

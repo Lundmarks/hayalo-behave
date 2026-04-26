@@ -1,0 +1,82 @@
+import discord
+from discord import app_commands
+from discord.ext import commands
+
+import db.database as db
+from config import LOSS_REPORT, DM_NOTIFY_THRESHOLD
+
+
+class Reports(commands.Cog):
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
+
+    @app_commands.command(name="report", description="Anonymously report a user for misconduct")
+    @app_commands.describe(
+        user="The user to report",
+        reason="Reason for the report (max 200 characters)",
+    )
+    async def report(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member,
+        reason: str,
+    ) -> None:
+        reporter_id = interaction.user.id
+        target_id = user.id
+        guild_id = interaction.guild_id
+        reason = reason[:200].strip()
+
+        if not reason:
+            await interaction.response.send_message("Please provide a reason for the report.", ephemeral=True)
+            return
+        if user.bot:
+            await interaction.response.send_message("You cannot report bots.", ephemeral=True)
+            return
+        if reporter_id == target_id:
+            await interaction.response.send_message("You cannot report yourself.", ephemeral=True)
+            return
+
+        already_reported = await db.has_reported_recently(reporter_id, target_id, guild_id)
+        if already_reported:
+            await interaction.response.send_message(
+                "You have already reported this user in the last 24 hours.", ephemeral=True
+            )
+            return
+
+        await db.get_or_create_user(target_id, guild_id)
+        await db.record_report(reporter_id, target_id, guild_id, reason)
+
+        unique_reporters = await db.count_recent_unique_reporters(target_id, guild_id)
+        if unique_reporters >= 2:
+            await db.confirm_reports(target_id, guild_id)
+            old, new = await db.apply_score_delta(
+                target_id, guild_id, -LOSS_REPORT,
+                f"Confirmed report: {reason}", "report",
+            )
+
+            config = await db.get_guild_config(guild_id)
+            report_channel_id = config.get("report_channel_id") if config else None
+            if report_channel_id:
+                report_channel = interaction.guild.get_channel(report_channel_id)
+                if report_channel:
+                    await report_channel.send(
+                        f"🚨 A user has reported **{user.display_name}** for: {reason}"
+                    )
+
+            if abs(new - old) >= DM_NOTIFY_THRESHOLD and await db.get_dm_notify(target_id):
+                try:
+                    await user.send(
+                        f"**Behaviour Score Update**\n"
+                        f"Your behaviour score has decreased due to confirmed reports.\n"
+                        f"{old:,} → **{new:,}** / 12,000"
+                    )
+                except discord.Forbidden:
+                    pass
+
+        await interaction.response.send_message(
+            "Your report has been submitted anonymously. Thank you.", ephemeral=True
+        )
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Reports(bot))
