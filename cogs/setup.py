@@ -49,7 +49,7 @@ class Setup(commands.Cog):
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
     @app_commands.command(name="bot-check", description="[MOD] Verify the bot configuration is correct")
-    async def bot_check(self, interaction: discord.Interaction) -> None:
+    async def check_config(self, interaction: discord.Interaction) -> None:
         if not _is_mod(interaction):
             await interaction.response.send_message("You need Manage Server permission.", ephemeral=True)
             return
