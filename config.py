@@ -22,6 +22,7 @@ GAIN_REPLY = 30
 
 LOSS_REPORT = 300
 LOSS_SPAM = 100
+LOSS_SPAM_REPORT = 200
 LOSS_BOT_CHANNEL = 50
 
 # (min, max, label, daily_tip_limit)

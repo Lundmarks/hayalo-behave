@@ -5,7 +5,7 @@ A Discord bot that brings Dota 2's Behaviour Score system to your server.
 ## Features
 
 - **Behaviour Score** (0–12,000, starting at 10,000) for every member
-- **Reports** — two unique reports within 24 hours triggers a −300 penalty and an anonymous announcement
+- **Reports** — any user can report another; each report immediately applies a −300 penalty and posts a public announcement with the reason. You can report the same person again after 24 hours; doing so within 24 hours costs you −200 for spam-reporting.
 - **Tips** — commend users for +100; daily tip limit scales with your own tier; if the recipient is in a voice channel the bot joins and plays a sound
 - **Passive gains** — first message of the day (+20), hourly activity (+5, capped at +50/day), reactions (+10/unique user), replies (+30)
 - **Bot-channel enforcement** — optional: using commands outside the designated channel costs −50
@@ -73,7 +73,7 @@ Slash commands are synced to your guild instantly on startup and whenever the bo
 
 Run `/setup` in any channel and pick your channels from the dropdowns:
 
-- **Report channel** — where anonymous report announcements appear
+- **Report channel** — where report announcements are posted publicly
 - **Digest channel** — where the Monday weekly digest is posted
 - **Bot channel** *(optional)* — restrict all bot commands to one channel (costs −50 if used elsewhere)
 
@@ -124,14 +124,14 @@ docker compose up -d --build
 | `/leaderboard` | Top 10 scores in the server |
 | `/history [@user]` | Last 10 score events for any user |
 | `/tip @user [note]` | Commend a user (+100 to their score) |
-| `/report @user [reason]` | Anonymously report a user |
+| `/report @user [reason]` | Report a user (−300 to their score, public announcement) |
 | `/server-stats` | Server-wide score statistics |
 | `/notifications` | Toggle DM score-change notifications |
 | `/setup` | *(Mod)* Configure channels — re-run to change |
 | `/bot-check` | *(Mod)* Verify the bot configuration |
 | `/mod-log` | *(Mod)* Recent score events |
 | `/mod-adjust @user [amount] [reason]` | *(Mod)* Manual score adjustment |
-| `/mod-pending-reports` | *(Mod)* Unconfirmed reports in the last 24 h |
+| `/mod-pending-reports` | *(Mod)* Reports submitted in the last 24 h |
 
 Mod commands require the **Manage Server** permission.
 

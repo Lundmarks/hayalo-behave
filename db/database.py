@@ -344,7 +344,7 @@ async def record_tip(tipper_id: int, recipient_id: int, guild_id: int, note: str
 # Report helpers
 # ---------------------------------------------------------------------------
 
-async def has_reported_recently(reporter_id: int, target_id: int, guild_id: int) -> bool:
+async def has_reported_in_24h(reporter_id: int, target_id: int, guild_id: int) -> bool:
     conn = get_db()
     async with conn.execute(
         """SELECT 1 FROM reports
@@ -364,33 +364,10 @@ async def record_report(reporter_id: int, target_id: int, guild_id: int, reason:
     await conn.commit()
 
 
-async def count_recent_unique_reporters(target_id: int, guild_id: int) -> int:
-    conn = get_db()
-    async with conn.execute(
-        """SELECT COUNT(DISTINCT reporter_id) FROM reports
-           WHERE target_id = ? AND guild_id = ? AND confirmed = 0
-           AND datetime(timestamp) > datetime('now', '-24 hours')""",
-        (target_id, guild_id),
-    ) as cur:
-        row = await cur.fetchone()
-    return row[0] if row else 0
-
-
-async def confirm_reports(target_id: int, guild_id: int) -> None:
-    conn = get_db()
-    await conn.execute(
-        """UPDATE reports SET confirmed = 1
-           WHERE target_id = ? AND guild_id = ? AND confirmed = 0
-           AND datetime(timestamp) > datetime('now', '-24 hours')""",
-        (target_id, guild_id),
-    )
-    await conn.commit()
-
-
 async def get_pending_reports(guild_id: int) -> list[dict]:
     conn = get_db()
     async with conn.execute(
-        """SELECT * FROM reports WHERE guild_id = ? AND confirmed = 0
+        """SELECT * FROM reports WHERE guild_id = ?
            AND datetime(timestamp) > datetime('now', '-24 hours')
            ORDER BY timestamp DESC""",
         (guild_id,),
