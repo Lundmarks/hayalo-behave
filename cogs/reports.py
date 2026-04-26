@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 import db.database as db
-from config import LOSS_REPORT, LOSS_SPAM_REPORT, DM_NOTIFY_THRESHOLD
+from config import LOSS_REPORT, LOSS_SPAM_REPORT
 
 
 class Reports(commands.Cog):
@@ -66,11 +66,12 @@ class Reports(commands.Cog):
                     f"Score: {old:,} → **{new:,}** / 12,000"
                 )
 
-        if abs(new - old) >= DM_NOTIFY_THRESHOLD and await db.get_dm_notify(target_id):
+        if await db.get_dm_notify(target_id):
             try:
                 await user.send(
                     f"**Behaviour Score Update**\n"
                     f"You have been reported.\n"
+                    f"**Reason:** {reason}\n"
                     f"{old:,} → **{new:,}** / 12,000"
                 )
             except discord.Forbidden:
