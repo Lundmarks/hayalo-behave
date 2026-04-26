@@ -6,7 +6,7 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 SPAM_MESSAGE_LIMIT = int(os.getenv("SPAM_MESSAGE_LIMIT", 5))
 SPAM_TIME_WINDOW = int(os.getenv("SPAM_TIME_WINDOW", 5))
-DATABASE_PATH = "behave.db"
+DATABASE_PATH = "data/behave.db"
 TIMEZONE = "Europe/Stockholm"
 
 SCORE_START = 10_000

@@ -72,6 +72,8 @@ CREATE TABLE IF NOT EXISTS guild_config (
 
 async def init_db() -> None:
     global _db
+    import os
+    os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
     _db = await aiosqlite.connect(DATABASE_PATH)
     _db.row_factory = aiosqlite.Row
     await _db.executescript(_SCHEMA)

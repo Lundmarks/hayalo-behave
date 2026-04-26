@@ -2,9 +2,7 @@
 .env
 
 # Runtime database
-behave.db
-behave.db-shm
-behave.db-wal
+data/
 
 # User-provided audio (potentially large binaries)
 sounds/*.mp3
