@@ -26,8 +26,8 @@ async def _play_tip_sound(guild: discord.Guild, voice_channel: discord.VoiceChan
         vc.play(discord.FFmpegPCMAudio(TIP_SOUND_PATH))
         while vc.is_playing():
             await asyncio.sleep(0.3)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[voice] failed to play tip sound: {e}")
     finally:
         try:
             if vc and vc.is_connected():
@@ -96,7 +96,6 @@ class Tipping(commands.Cog):
         await interaction.response.send_message(
             f"Tipped **{user.display_name}**! Their score is now **{new:,} / 12,000**.\n"
             f"You have **{tips_remaining}** tip(s) remaining today.",
-            ephemeral=True,
         )
 
         if user.voice and user.voice.channel:
