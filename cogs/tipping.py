@@ -1,53 +1,17 @@
 import asyncio
-import io
-import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import discord
 from discord import app_commands
 from discord.ext import commands
-from gtts import gTTS
 
 import db.database as db
 from config import GAIN_TIP, TIMEZONE, DM_NOTIFY_THRESHOLD, TIP_SOUND_PATH
 from utils.score_utils import get_tier
+from utils.voice import play_voice_announcement
 
 TZ = ZoneInfo(TIMEZONE)
-
-
-def _make_tts(text: str) -> io.BytesIO:
-    buf = io.BytesIO()
-    gTTS(text=text, lang="en").write_to_fp(buf)
-    buf.seek(0)
-    return buf
-
-
-async def _play_tip_sound(guild: discord.Guild, voice_channel: discord.VoiceChannel, tts_text: str) -> None:
-    if guild.voice_client and guild.voice_client.is_connected():
-        return
-
-    vc: discord.VoiceClient | None = None
-    try:
-        vc = await voice_channel.connect(timeout=10.0, reconnect=False)
-
-        if os.path.isfile(TIP_SOUND_PATH):
-            vc.play(discord.FFmpegPCMAudio(TIP_SOUND_PATH))
-            while vc.is_playing():
-                await asyncio.sleep(0.3)
-
-        tts_buf = await asyncio.get_event_loop().run_in_executor(None, _make_tts, tts_text)
-        vc.play(discord.FFmpegPCMAudio(tts_buf, pipe=True))
-        while vc.is_playing():
-            await asyncio.sleep(0.3)
-    except Exception as e:
-        print(f"[voice] failed to play tip sound: {e}")
-    finally:
-        try:
-            if vc and vc.is_connected():
-                await vc.disconnect(force=True)
-        except Exception:
-            pass
 
 
 class Tipping(commands.Cog):
@@ -116,7 +80,7 @@ class Tipping(commands.Cog):
             tts_text = f"Tip for {user.display_name}"
             if note:
                 tts_text += f". {note}"
-            asyncio.create_task(_play_tip_sound(interaction.guild, user.voice.channel, tts_text))
+            asyncio.create_task(play_voice_announcement(interaction.guild, user.voice.channel, tts_text, sound_path=TIP_SOUND_PATH))
 
 
 async def setup(bot: commands.Bot) -> None:

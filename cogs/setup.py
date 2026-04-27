@@ -5,7 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 
 import db.database as db
-from config import TIP_SOUND_PATH, SPAM_MESSAGE_LIMIT, SPAM_TIME_WINDOW
+from config import TIP_SOUND_PATH, REPORT_SOUND_PATH, SPAM_MESSAGE_LIMIT, SPAM_TIME_WINDOW
 
 
 def _is_mod(interaction: discord.Interaction) -> bool:
@@ -116,6 +116,12 @@ class Setup(commands.Cog):
             lines.append(f"✅ Tip sound — {TIP_SOUND_PATH}")
         else:
             lines.append(f"⚠️  Tip sound — {TIP_SOUND_PATH} missing (voice tips disabled)")
+
+        # Report sound
+        if os.path.isfile(REPORT_SOUND_PATH):
+            lines.append(f"✅ Report sound — {REPORT_SOUND_PATH}")
+        else:
+            lines.append(f"⚠️  Report sound — {REPORT_SOUND_PATH} missing (voice reports disabled)")
 
         # Voice permissions
         voice_ok = any(

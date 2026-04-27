@@ -1,3 +1,4 @@
+import asyncio
 import random
 
 import discord
@@ -5,6 +6,8 @@ from discord import app_commands
 from discord.ext import commands
 
 import db.database as db
+from config import REPORT_SOUND_PATH
+from utils.voice import play_voice_announcement
 
 _REPORT_QUIPS = [
     "⚖️ *The council has spoken.*",
@@ -95,6 +98,15 @@ class Reports(commands.Cog):
                 )
             except discord.Forbidden:
                 pass
+
+        if user.voice and user.voice.channel:
+            asyncio.create_task(
+                play_voice_announcement(
+                    interaction.guild, user.voice.channel,
+                    f"{user.display_name} has been reported. Reason: {reason}",
+                    sound_path=REPORT_SOUND_PATH,
+                )
+            )
 
         await interaction.response.send_message(
             "Your report has been submitted anonymously. Thank you.", ephemeral=True

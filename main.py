@@ -68,15 +68,13 @@ class BehaveBot(commands.Bot):
         ):
             await self.load_extension(cog)
 
-        # Sync to every guild the bot is currently in for instant command availability
-        for guild in self.guilds:
-            self.tree.copy_global_to(guild=guild)
-            await self.tree.sync(guild=guild)
-
         self.scheduler = setup_scheduler(self)
         self.scheduler.start()
 
     async def on_ready(self) -> None:
+        for guild in self.guilds:
+            self.tree.copy_global_to(guild=guild)
+            await self.tree.sync(guild=guild)
         guild_names = ", ".join(g.name for g in self.guilds) or "none"
         print(f"Ready — {self.user} | guilds: {guild_names}")
 

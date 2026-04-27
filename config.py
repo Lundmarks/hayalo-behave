@@ -49,6 +49,7 @@ TIERS = [
 
 DM_NOTIFY_THRESHOLD = 200
 TIP_SOUND_PATH = "sounds/tip.mp3"
+REPORT_SOUND_PATH = "sounds/report.mp3"
 
 # Commands that bypass the bot-channel restriction
 BOT_CHANNEL_EXEMPT = frozenset({
