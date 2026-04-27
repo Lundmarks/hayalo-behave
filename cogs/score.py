@@ -3,7 +3,14 @@ from discord import app_commands
 from discord.ext import commands
 
 import db.database as db
-from config import SCORE_MAX
+from config import (
+    SCORE_MAX, SCORE_MIN, SCORE_START,
+    GAIN_TIP, GAIN_FIRST_MESSAGE, GAIN_PASSIVE_HOURLY, GAIN_PASSIVE_DAILY_CAP,
+    GAIN_REACTION, GAIN_REPLY,
+    LOSS_REPORT, LOSS_SPAM, LOSS_SPAM_REPORT, LOSS_BOT_CHANNEL,
+    LOSS_BARE_QUESTION, LOSS_SWEAR,
+    TIERS,
+)
 from utils.score_utils import get_tier, format_score_bar, tier_color
 
 
@@ -90,6 +97,44 @@ class Score(commands.Cog):
             value="\n".join(breakdown_lines) if breakdown_lines else "—",
             inline=False,
         )
+        await interaction.response.send_message(embed=embed)
+
+    @app_commands.command(name="rules", description="How the behaviour score system works")
+    async def rules(self, interaction: discord.Interaction) -> None:
+        embed = discord.Embed(
+            title="Behaviour Score — How It Works",
+            description=(
+                f"Every member starts at **{SCORE_START:,}** points. "
+                f"Score is capped between **{SCORE_MIN}** and **{SCORE_MAX:,}**."
+            ),
+            color=discord.Color.blurple(),
+        )
+
+        tier_lines = "\n".join(
+            f"`{low:,}–{high:,}` {label} — {tips} tip(s)/day"
+            for low, high, label, tips in TIERS
+        )
+        embed.add_field(name="Tiers", value=tier_lines, inline=False)
+
+        gains = (
+            f"+{GAIN_TIP} — Receiving a tip\n"
+            f"+{GAIN_REPLY} — Someone replies to your message\n"
+            f"+{GAIN_REACTION} — Someone reacts to your message\n"
+            f"+{GAIN_FIRST_MESSAGE} — First message of the day\n"
+            f"+{GAIN_PASSIVE_HOURLY}/hr — Active in the last hour (max +{GAIN_PASSIVE_DAILY_CAP}/day)"
+        )
+        embed.add_field(name="Ways to Earn", value=gains, inline=False)
+
+        losses = (
+            f"−{LOSS_REPORT} — Being reported\n"
+            f"−{LOSS_SPAM} — Sending messages too fast\n"
+            f"−{LOSS_SWEAR} — Swearing\n"
+            f"−{LOSS_BARE_QUESTION} — Sending only `?`\n"
+            f"−{LOSS_BOT_CHANNEL} — Using bot commands outside the designated channel\n"
+            f"−{LOSS_SPAM_REPORT} — Reporting the same person twice within 24 hours"
+        )
+        embed.add_field(name="Ways to Lose", value=losses, inline=False)
+
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="notifications", description="Toggle DM notifications for score changes")

@@ -54,5 +54,5 @@ TIP_SOUND_PATH = "sounds/tip.mp3"
 BOT_CHANNEL_EXEMPT = frozenset({
     "setup", "bot-check",
     "mod-log", "mod-adjust", "mod-pending-reports",
-    "notifications", "report",
+    "notifications", "report", "rules",
 })
