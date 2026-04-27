@@ -33,9 +33,9 @@
 
 ## Phase 6: Report System ✅
 - [x] `/report @user [reason]` (ephemeral, anonymous)
-- [x] Rolling 24h window, 2-reporter threshold
-- [x] −300 on confirmation, anonymous announcement to report channel
-- [x] DM target on confirmation
+- [x] Reporter can only report the same target once per 24h rolling window; repeat attempt costs reporter −200
+- [x] −300 applied immediately on each confirmed report, anonymous announcement to report channel
+- [x] DM target on report
 
 ## Phase 7: Spam Detection ✅
 - [x] In-memory sliding window per user
@@ -71,3 +71,13 @@
 - [x] `.env` reduced to token + spam config only
 - [x] Docker support (Dockerfile, docker-compose.yml, .dockerignore)
 - [x] README with full setup, Docker, and command reference
+
+## Phase 14: Message Content Penalties
+- [x] −score when a message consists of only a question mark (bare `?` with optional whitespace)
+- [x] −score when a message contains a swear word (English and Swedish word lists in `config.py`)
+  - Case-insensitive, whole-word matching to avoid false positives (e.g. "assassin")
+  - Cooldown per user so rapid-fire swearing doesn't stack infinitely
+  - Both penalties logged to score_events with source `message_content`
+- [ ] −score when a user has reported the same target on more than N distinct calendar days (persistent targeting)
+  - Tracked via a DB query on the reports table; no new table needed
+  - Penalty applied to the reporter, logged with source `repeat_reporter`

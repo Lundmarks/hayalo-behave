@@ -1,3 +1,4 @@
+import re
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -12,11 +13,21 @@ from config import (
     GAIN_REACTION,
     GAIN_REPLY,
     LOSS_SPAM,
+    LOSS_BARE_QUESTION,
+    LOSS_SWEAR,
     SPAM_MESSAGE_LIMIT,
     SPAM_TIME_WINDOW,
+    SWEAR_COOLDOWN,
+    SWEAR_WORDS,
     DM_NOTIFY_THRESHOLD,
     TIMEZONE,
 )
+
+_SWEAR_SPLIT = re.compile(r"[\s\W]+")
+
+
+def _contains_swear(text: str) -> bool:
+    return any(t in SWEAR_WORDS for t in _SWEAR_SPLIT.split(text.lower()) if t)
 
 TZ = ZoneInfo(TIMEZONE)
 
@@ -96,6 +107,23 @@ class Events(commands.Cog):
                     user_id, guild_id, -LOSS_SPAM, "Spam detection", "spam"
                 )
                 await _maybe_dm(message.author, old, new, "You were penalised for spamming.")
+
+        # Bare question mark
+        if message.content.strip() == "?":
+            old, new = await db.apply_score_delta(
+                user_id, guild_id, -LOSS_BARE_QUESTION, "Bare question mark", "message_content"
+            )
+            await _maybe_dm(message.author, old, new)
+
+        # Swearing
+        if _contains_swear(message.content):
+            last_swear = state.swear_cooldowns.get(user_id, 0.0)
+            if now - last_swear > SWEAR_COOLDOWN:
+                state.swear_cooldowns[user_id] = now
+                old, new = await db.apply_score_delta(
+                    user_id, guild_id, -LOSS_SWEAR, "Swearing", "message_content"
+                )
+                await _maybe_dm(message.author, old, new)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:

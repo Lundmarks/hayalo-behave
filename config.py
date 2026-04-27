@@ -24,6 +24,19 @@ LOSS_REPORT = 300
 LOSS_SPAM = 100
 LOSS_SPAM_REPORT = 200
 LOSS_BOT_CHANNEL = 50
+LOSS_BARE_QUESTION = 25
+LOSS_SWEAR = 50
+
+SWEAR_COOLDOWN = 60  # seconds between swear penalties per user
+
+SWEAR_WORDS: frozenset[str] = frozenset({
+    # English
+    "fuck", "shit", "bitch", "cunt", "dick", "cock", "ass", "asshole",
+    "bastard", "piss", "whore", "slut", "twat", "wanker", "bollocks", "prick",
+    # Swedish
+    "fan", "jävla", "helvete", "skit", "fitta", "kuk", "hora", "bög",
+    "jävel", "förbannad", "satkuk", "fitthål", "skitstövel", "röv", "rövhål",
+})
 
 # (min, max, label, daily_tip_limit)
 TIERS = [
