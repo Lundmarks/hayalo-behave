@@ -1,32 +1,64 @@
 # Behave Bot
 
-A Discord bot that brings Dota 2's Behaviour Score system to your server.
+A Discord bot that brings a Dota 2-style behaviour score system to your server. Every member has a score between 0 and 12,000 — starting at 10,000 — that rises through good participation and falls through toxic behaviour. Scores are per-guild, fully persistent, and visible to everyone.
 
-## Features
+---
 
-- **Behaviour Score** (0–12,000, starting at 10,000) for every member
-- **Reports** — any user can report another; each report immediately applies a −300 penalty and posts a public announcement with the reason. You can report the same person again after 24 hours; doing so within 24 hours costs you −200 for spam-reporting.
-- **Tips** — commend users for +100; daily tip limit scales with your own tier; if the recipient is in a voice channel the bot joins and plays a sound
-- **Passive gains** — first message of the day (+20), hourly activity (+5, capped at +50/day), reactions (+10/unique user), replies (+30)
-- **Bot-channel enforcement** — optional: using commands outside the designated channel costs −50
-- **Leaderboard, history, and server stats** — all public
-- **Weekly digest** — every Monday 08:00 GMT+2
-- **Mod tools** — `/mod-adjust`, `/mod-log`, `/mod-pending-reports`
-- **Multi-server** — each server configures itself independently via `/setup`
+## How it works
+
+Every message, reaction, tip, and report feeds into a member's score:
+
+1. Members earn points passively — first message of the day, replies received, reactions received, and hourly activity recovery
+2. Members commend each other with `/tip`, adding +100 to the recipient's score
+3. Members report misconduct with `/report` — each report immediately deducts −300 and posts a public announcement
+4. Automated checks penalise spam, swearing, and lazy messages in real time
+5. A weekly digest posts every Monday summarising the server's score distribution and top movers
+6. When a tip or report targets a user in a voice channel, the bot joins and announces it with TTS
+
+---
+
+## Project structure
+
+```
+main.py               Bot entry point, command tree, bot-channel enforcement
+config.py             All tuneable constants — scores, tiers, gains, losses, word lists
+cogs/
+  events.py           on_message, on_reaction_add — passive scoring and penalties
+  tipping.py          /tip command and voice TTS playback
+  reports.py          /report command with 24h spam-report protection
+  score.py            /score, /leaderboard, /history (chart), /server-stats, /rules, /notifications
+  moderation.py       /mod-log, /mod-adjust, /mod-pending-reports
+  setup.py            /setup, /bot-check
+db/
+  database.py         SQLite layer (aiosqlite), all queries, schema definition
+utils/
+  scheduler.py        APScheduler — hourly passive recovery, Monday digest
+  score_utils.py      Tier lookup, score bar formatter, tier colours
+  state.py            In-memory spam and swear cooldown state
+  voice.py            Shared voice channel TTS playback utility
+sounds/
+  tip.mp3             Played when a user receives a tip (provide your own)
+  report.mp3          Played when a user is reported (provide your own)
+data/
+  behave.db           SQLite database (created on first run, gitignored)
+```
+
+---
 
 ## Setup
 
-### 1. Install dependencies
+**Requirements:** Python 3.11+, ffmpeg
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+# Install dependencies
 pip install -r requirements.txt
+
+# Install ffmpeg (required for voice)
+sudo apt-get install ffmpeg   # Debian/Ubuntu
+brew install ffmpeg           # macOS
 ```
 
-### 2. Create your `.env` file
-
-Copy `.env.example` to `.env` and fill in your bot token:
+**Create a `.env` file:**
 
 ```
 DISCORD_TOKEN=your_bot_token_here
@@ -34,110 +66,118 @@ SPAM_MESSAGE_LIMIT=5
 SPAM_TIME_WINDOW=5
 ```
 
-That is the only required value. Everything else is configured through Discord after the bot joins.
+**Add sound files:**
 
-### 3. Add the tip sound
+Place MP3 files at `sounds/tip.mp3` and `sounds/report.mp3`. These are played in voice channels when tips and reports are triggered. If either file is missing the bot skips that voice step silently.
 
-Place an MP3 file at `sounds/tip.mp3`. This is played in voice when a user receives a tip.
-If missing, the bot skips the voice step silently.
+**Discord Developer Portal:**
 
-ffmpeg must be installed on the host:
+1. Go to discord.com/developers/applications and create an application
+2. Under **Bot**, enable **Server Members Intent** and **Message Content Intent**
+3. Under **OAuth2 → URL Generator**, select scopes `bot` and `applications.commands`
+4. Required permissions: `Send Messages`, `Read Message History`, `View Channels`, `Connect`, `Speak`
+5. Use the generated URL to invite the bot to your server
 
-```bash
-# Debian/Ubuntu
-sudo apt-get install ffmpeg
-
-# macOS
-brew install ffmpeg
-```
-
-### 4. Discord Developer Portal
-
-1. Go to https://discord.com/developers/applications and create a new application.
-2. Under **Bot**, enable:
-   - **Server Members Intent**
-   - **Message Content Intent**
-3. Under **OAuth2 → URL Generator**, select scopes: `bot`, `applications.commands`.
-   Permissions: `Send Messages`, `Read Message History`, `View Channels`, `Connect`, `Speak`.
-4. Use the generated URL to invite the bot to your server.
-
-### 5. Run the bot
+**Run:**
 
 ```bash
 python main.py
 ```
 
-Slash commands are synced to your guild instantly on startup and whenever the bot joins a new server.
+Slash commands sync to all guilds on startup. On first run there are no channels configured — use `/setup` in Discord to complete setup.
 
-### 6. Configure the bot in Discord
+**Configure in Discord:**
 
-Run `/setup` in any channel and pick your channels from the dropdowns:
+Run `/setup` and select your channels from the dropdowns:
 
-- **Report channel** — where report announcements are posted publicly
+- **Report channel** — where public report announcements are posted
 - **Digest channel** — where the Monday weekly digest is posted
-- **Bot channel** *(optional)* — restrict all bot commands to one channel (costs −50 if used elsewhere)
+- **Bot channel** *(optional)* — restrict commands to one channel; using them elsewhere costs −50
 
-Run `/bot-check` to verify everything is green.
+Run `/bot-check` to verify everything is working.
 
 ---
 
 ## Running with Docker
 
-Docker bundles ffmpeg and all dependencies — no local Python or ffmpeg install needed.
-
-### Build and start
+Docker bundles ffmpeg and all dependencies — no local install needed.
 
 ```bash
+# Build and start
 docker compose up -d --build
-```
 
-### View logs
-
-```bash
+# View logs
 docker compose logs -f
-```
 
-### Stop the bot
-
-```bash
+# Stop
 docker compose down
-```
 
-### Rebuild after code changes
-
-```bash
+# Rebuild after code changes
 docker compose up -d --build
 ```
 
-**Notes:**
-- `.env` is read from the project root via `env_file`.
-- `behave.db` and `sounds/` are mounted as volumes so they survive rebuilds.
-- Place `tip.mp3` in the `sounds/` directory on the host before starting.
+The `data/` and `sounds/` directories are bind-mounted so the database and sound files survive rebuilds. Place your MP3 files in `sounds/` on the host before starting.
 
 ---
 
 ## Commands
 
+### User commands
+
 | Command | Description |
 |---|---|
-| `/score [@user]` | View score, tier, rank, and progress bar |
+| `/score [@user]` | Score, tier, rank, and progress bar |
 | `/leaderboard` | Top 10 scores in the server |
-| `/history [@user]` | Last 10 score events for any user |
+| `/history [@user]` | Score history chart for any user |
 | `/tip @user [note]` | Commend a user (+100 to their score) |
-| `/report @user [reason]` | Report a user (−300 to their score, public announcement) |
-| `/server-stats` | Server-wide score statistics |
-| `/notifications` | Toggle DM score-change notifications |
-| `/setup` | *(Mod)* Configure channels — re-run to change |
-| `/bot-check` | *(Mod)* Verify the bot configuration |
-| `/mod-log` | *(Mod)* Recent score events |
-| `/mod-adjust @user [amount] [reason]` | *(Mod)* Manual score adjustment |
-| `/mod-pending-reports` | *(Mod)* Reports submitted in the last 24 h |
+| `/report @user [reason]` | Report a user (−300 penalty, public announcement) |
+| `/server-stats` | Server-wide score statistics and tier breakdown |
+| `/rules` | How the scoring system works |
+| `/notifications` | Toggle DM score-change notifications on or off |
+
+### Mod commands
+
+| Command | Description |
+|---|---|
+| `/setup` | Configure channels — re-run to change |
+| `/bot-check` | Verify channels, permissions, and sound files |
+| `/mod-log` | 20 most recent score events across all users |
+| `/mod-adjust @user [amount] [reason]` | Manual score adjustment with a logged reason |
+| `/mod-pending-reports` | Reports submitted in the last 24 hours |
 
 Mod commands require the **Manage Server** permission.
 
-## Tiers
+---
 
-| Tier | Score Range | Tips/Day |
+## Scoring
+
+### Gains
+
+| Source | Amount |
+|---|---|
+| Receiving a tip | +100 |
+| Someone replies to your message | +30 |
+| Receiving a ⭐ reaction | +25 |
+| Receiving a 👏 or ❤️ reaction | +20 |
+| Receiving a 🔥 reaction | +15 |
+| Receiving any other reaction | +10 |
+| First message of the day | +20 |
+| Active in the last hour | +5 (max +50/day) |
+
+### Losses
+
+| Source | Amount |
+|---|---|
+| Being reported | −300 |
+| Sending messages too fast | −100 |
+| Swearing | −50 |
+| Using bot commands outside the designated channel | −50 |
+| Sending only `?` | −25 |
+| Reporting the same person twice within 24 hours | −200 |
+
+### Tiers
+
+| Tier | Range | Tips/day |
 |---|---|---|
 | Toxic | 0–2,999 | 1 |
 | Low | 3,000–5,999 | 2 |
@@ -145,4 +185,14 @@ Mod commands require the **Manage Server** permission.
 | Good | 9,000–11,499 | 4 |
 | Pinnacle | 11,500–12,000 | 5 |
 
-Daily tip counters reset at **00:00 GMT+2**.
+Daily tip limits reset at 00:00 GMT+2. Tiers are cosmetic and affect tip limits only.
+
+---
+
+## Notes
+
+- Scores are isolated per guild — a user's score in one server does not affect another
+- Swear cooldown is 60 seconds per user — rapid-fire swearing counts as one penalty window
+- Spam and swear cooldowns are in-memory and reset on bot restart
+- All score changes are logged to `score_events` with a reason and source for full auditability
+- The weekly digest runs every Monday at 08:00 Europe/Stockholm

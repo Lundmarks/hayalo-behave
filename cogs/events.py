@@ -11,6 +11,7 @@ import utils.state as state
 from config import (
     GAIN_FIRST_MESSAGE,
     GAIN_REACTION,
+    GAIN_REACTION_WEIGHTED,
     GAIN_REPLY,
     LOSS_SPAM,
     LOSS_BARE_QUESTION,
@@ -154,9 +155,10 @@ class Events(commands.Cog):
 
         await db.get_or_create_user(author.id, payload.guild_id)
         reactor_name = payload.member.display_name if payload.member else "a user"
+        gain = GAIN_REACTION_WEIGHTED.get(str(payload.emoji), GAIN_REACTION)
         old, new = await db.apply_score_delta(
-            author.id, payload.guild_id, GAIN_REACTION,
-            f"Received a reaction from {reactor_name}", "reaction",
+            author.id, payload.guild_id, gain,
+            f"Received a {payload.emoji} reaction from {reactor_name}", "reaction",
         )
         author_member = message.guild.get_member(author.id) if message.guild else None
         if author_member:

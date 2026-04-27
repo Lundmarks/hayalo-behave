@@ -1,3 +1,10 @@
+import io
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -12,6 +19,61 @@ from config import (
     TIERS,
 )
 from utils.score_utils import get_tier, format_score_bar, tier_color
+
+_CHART_BG = "#2b2d31"
+_CHART_AX = "#1e1f22"
+_CHART_LINE = "#5865f2"
+_CHART_TEXT = "#dbdee1"
+_CHART_GRID = "#3f4147"
+_TIER_COLORS = ["#ed4245", "#f57f17", "#fee75c", "#57f287", "#ffd700"]
+
+
+def _build_history_chart(display_name: str, current_score: int, events: list[dict]) -> io.BytesIO:
+    events_asc = list(reversed(events))
+    base = current_score - sum(e["delta"] for e in events_asc)
+
+    scores = [base]
+    for e in events_asc:
+        scores.append(scores[-1] + e["delta"])
+
+    dates = [""] + [e["timestamp"][:10] for e in events_asc]
+
+    fig, ax = plt.subplots(figsize=(8, 3.5))
+    fig.patch.set_facecolor(_CHART_BG)
+    ax.set_facecolor(_CHART_AX)
+
+    xs = list(range(len(scores)))
+    ax.plot(xs, scores, color=_CHART_LINE, linewidth=2, marker="o", markersize=4, zorder=3)
+    ax.fill_between(xs, scores, alpha=0.12, color=_CHART_LINE)
+
+    for (low, _, _, _), color in zip(TIERS, _TIER_COLORS):
+        if low > 0:
+            ax.axhline(y=low, color=color, linewidth=0.6, alpha=0.35, linestyle="--", zorder=1)
+
+    score_range = max(scores) - min(scores)
+    pad = max(300, score_range * 0.15)
+    ax.set_ylim(max(0, min(scores) - pad), min(SCORE_MAX + 200, max(scores) + pad))
+    ax.set_xlim(-0.3, len(scores) - 0.7)
+
+    step = max(1, len(dates) // 7)
+    tick_xs = list(range(0, len(dates), step))
+    ax.set_xticks(tick_xs)
+    ax.set_xticklabels([dates[i] for i in tick_xs], rotation=30, ha="right", fontsize=7, color=_CHART_TEXT)
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f"{int(v):,}"))
+    ax.tick_params(axis="y", colors=_CHART_TEXT, labelsize=8)
+    ax.yaxis.tick_right()
+
+    for spine in ax.spines.values():
+        spine.set_edgecolor(_CHART_GRID)
+    ax.grid(axis="y", color=_CHART_GRID, linewidth=0.5, alpha=0.5)
+    ax.set_title(f"Score History — {display_name}", color=_CHART_TEXT, fontsize=11, pad=10)
+
+    plt.tight_layout()
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", dpi=130, facecolor=_CHART_BG)
+    plt.close(fig)
+    buf.seek(0)
+    return buf
 
 
 class Score(commands.Cog):
@@ -63,23 +125,18 @@ class Score(commands.Cog):
         self, interaction: discord.Interaction, user: discord.Member | None = None
     ) -> None:
         target = user or interaction.user
-        events = await db.get_score_events(target.id, interaction.guild_id, limit=10)
+        await interaction.response.defer()
 
-        embed = discord.Embed(
-            title=f"Score History — {target.display_name}",
-            color=discord.Color.blurple(),
-        )
+        data = await db.get_or_create_user(target.id, interaction.guild_id)
+        events = await db.get_score_events(target.id, interaction.guild_id, limit=20)
+
         if not events:
-            embed.description = "No score events recorded yet."
-        else:
-            lines = []
-            for e in events:
-                delta = e["delta"]
-                sign = "+" if delta >= 0 else ""
-                ts = e["timestamp"][:10]
-                lines.append(f"`{ts}` **{sign}{delta}** — {e['reason']}")
-            embed.description = "\n".join(lines)
-        await interaction.response.send_message(embed=embed)
+            await interaction.followup.send(f"No score history recorded yet for **{target.display_name}**.")
+            return
+
+        buf = _build_history_chart(target.display_name, data["score"], events)
+        file = discord.File(buf, filename="history.png")
+        await interaction.followup.send(file=file)
 
     @app_commands.command(name="server-stats", description="Server-wide behaviour score statistics")
     async def server_stats(self, interaction: discord.Interaction) -> None:
