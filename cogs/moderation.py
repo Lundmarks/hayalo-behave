@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 import db.database as db
+from utils.score_utils import check_tier_change
 
 
 def _is_mod(interaction: discord.Interaction) -> bool:
@@ -61,8 +62,15 @@ class Moderation(commands.Cog):
         )
 
         sign = "+" if amount >= 0 else ""
+        tier = check_tier_change(old, new)
+        tier_line = ""
+        if tier:
+            old_label, new_label = tier
+            direction = "risen to" if new > old else "fallen to"
+            emoji = "📈" if new > old else "📉"
+            tier_line = f"\n{emoji} **{user.display_name}** has {direction} **{new_label}**."
         await interaction.response.send_message(
-            f"Adjusted **{user.display_name}**: {old:,} → **{new:,}** ({sign}{amount})\nReason: {reason}",
+            f"Adjusted **{user.display_name}**: {old:,} → **{new:,}** ({sign}{amount})\nReason: {reason}{tier_line}",
             ephemeral=False,
         )
 

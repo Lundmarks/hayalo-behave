@@ -20,6 +20,15 @@ def format_score_bar(score: int, width: int = 20) -> str:
     return f"`[{'█' * filled}{'░' * (width - filled)}]`"
 
 
+def check_tier_change(old_score: int, new_score: int) -> tuple[str, str] | None:
+    """Returns (old_label, new_label) if the tier boundary was crossed, else None."""
+    old_num, old_label, _ = get_tier(old_score)
+    new_num, new_label, _ = get_tier(new_score)
+    if old_num != new_num:
+        return old_label, new_label
+    return None
+
+
 def tier_color(tier_num: int) -> discord.Color:
     return {
         1: discord.Color.red(),

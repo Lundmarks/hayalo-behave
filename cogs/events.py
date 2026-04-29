@@ -8,6 +8,7 @@ from discord.ext import commands
 
 import db.database as db
 import utils.state as state
+from utils.score_utils import check_tier_change
 from config import (
     GAIN_FIRST_MESSAGE,
     GAIN_REACTION,
@@ -25,6 +26,13 @@ from config import (
 )
 
 _SWEAR_SPLIT = re.compile(r"[\s\W]+")
+
+
+async def _announce_tier_change(channel: discord.TextChannel, name: str, old_label: str, new_label: str, rose: bool) -> None:
+    if rose:
+        await channel.send(f"📈 **{name}** has risen to **{new_label}**!")
+    else:
+        await channel.send(f"📉 **{name}** has fallen to **{new_label}**.")
 
 
 def _contains_swear(text: str) -> bool:
@@ -108,6 +116,12 @@ class Events(commands.Cog):
                     user_id, guild_id, -LOSS_SPAM, "Spam detection", "spam"
                 )
                 await _maybe_dm(message.author, old, new, "You were penalised for spamming.")
+                await message.channel.send(
+                    f"🚨 **{message.author.display_name}** is spamming — −{LOSS_SPAM} behaviour score."
+                )
+                tier = check_tier_change(old, new)
+                if tier:
+                    await _announce_tier_change(message.channel, message.author.display_name, *tier, new > old)
 
         # Bare question mark
         if message.content.strip() == "?":
@@ -125,6 +139,12 @@ class Events(commands.Cog):
                     user_id, guild_id, -LOSS_SWEAR, "Swearing", "message_content"
                 )
                 await _maybe_dm(message.author, old, new)
+                await message.channel.send(
+                    f"🤬 **{message.author.display_name}** just swore — −{LOSS_SWEAR} behaviour score."
+                )
+                tier = check_tier_change(old, new)
+                if tier:
+                    await _announce_tier_change(message.channel, message.author.display_name, *tier, new > old)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:

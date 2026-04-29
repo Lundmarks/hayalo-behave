@@ -44,8 +44,8 @@ class BehaviourCommandTree(app_commands.CommandTree):
         ch = interaction.guild.get_channel(bot_channel_id) if interaction.guild else None
         mention = ch.mention if ch else "the designated bot channel"
         await interaction.response.send_message(
-            f"Please use bot commands in {mention}. (−{LOSS_BOT_CHANNEL} behaviour score)",
-            ephemeral=True,
+            f"{interaction.user.mention} Please use bot commands in {mention}. (−{LOSS_BOT_CHANNEL} behaviour score)",
+            ephemeral=False,
         )
         return False
 

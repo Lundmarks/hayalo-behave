@@ -22,6 +22,7 @@ _REPORT_QUIPS = [
     "🔔 *Ding ding ding — we have a problem.*",
 ]
 from config import LOSS_REPORT, LOSS_SPAM_REPORT
+from utils.score_utils import check_tier_change
 
 
 class Reports(commands.Cog):
@@ -73,11 +74,14 @@ class Reports(commands.Cog):
             f"Reported: {reason}", "report",
         )
 
+        tier = check_tier_change(old, new)
+        tier_line = f"\n📉 They have fallen to **{tier[1]}**." if tier else ""
         announcement = (
             f"🚨 **{user.display_name}** has been reported.\n"
             f"**Reason:** {reason}\n"
             f"Score: {old:,} → **{new:,}** / 12,000\n"
             f"{random.choice(_REPORT_QUIPS)}"
+            f"{tier_line}"
         )
         await interaction.channel.send(announcement)
 

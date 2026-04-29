@@ -8,7 +8,7 @@ from discord.ext import commands
 
 import db.database as db
 from config import GAIN_TIP, TIMEZONE, DM_NOTIFY_THRESHOLD, TIP_SOUND_PATH
-from utils.score_utils import get_tier
+from utils.score_utils import get_tier, check_tier_change
 from utils.voice import play_voice_announcement
 
 TZ = ZoneInfo(TIMEZONE)
@@ -75,6 +75,11 @@ class Tipping(commands.Cog):
             msg += f"\n> {note}"
         msg += f"\n{interaction.user.display_name} has **{tips_remaining}** tip(s) remaining today."
         await interaction.response.send_message(msg)
+
+        tier = check_tier_change(old, new)
+        if tier:
+            old_label, new_label = tier
+            await interaction.channel.send(f"📈 **{user.display_name}** has risen to **{new_label}**!")
 
         if user.voice and user.voice.channel:
             tts_text = f"Tip for {user.display_name}"
