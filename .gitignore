@@ -3,6 +3,9 @@
 
 # Runtime database
 data/
+behave.db
+behave.db-shm
+behave.db-wal
 
 # User-provided audio (potentially large binaries)
 sounds/*.mp3
