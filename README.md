@@ -60,7 +60,7 @@ It works like Dota 2's behaviour score system: passive gains for activity, comme
 | Sending only `?` | −25 |
 | Reporting the same person twice in 24 hours | −200 to the reporter |
 
-A weekly digest posts every Monday summarising score distribution and top movers. When a tip or report targets someone in a voice channel, the bot joins and announces it with TTS.
+A weekly digest posts every Monday summarising score distribution and top movers. When a tip or report targets someone in a voice channel, the bot pre-generates TTS audio and then joins to announce it immediately — using ElevenLabs neural voices if configured, falling back to Google TTS otherwise.
 
 ---
 
@@ -104,7 +104,16 @@ Create a `.env` file:
 DISCORD_TOKEN=your_bot_token_here
 SPAM_MESSAGE_LIMIT=5
 SPAM_TIME_WINDOW=5
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+ELEVENLABS_VOICE_ID=your_voice_id_here
 ```
+
+`ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` are optional. If omitted, TTS falls back to Google TTS (gTTS) automatically. To get these values:
+
+1. Sign up at [elevenlabs.io](https://elevenlabs.io) and copy your API key from **Profile → API Keys**
+2. Find a voice in the voice library, open it, and copy the voice ID from the URL or detail page
+
+> **Note:** Community/library voices require a paid ElevenLabs subscription. The default pre-made voices (e.g. `Adam`, `Rachel`) work on the free tier. If the API call fails for any reason, TTS silently falls back to gTTS.
 
 ---
 
@@ -280,6 +289,7 @@ data/
 - Python 3.11+
 - FFmpeg (system install)
 - Discord bot token
+- ElevenLabs API key + voice ID *(optional — falls back to gTTS if not set)*
 
 ---
 
@@ -290,5 +300,5 @@ MIT
 ---
 
 <div align="center">
-<sub>discord.py · aiosqlite · APScheduler · FFmpeg</sub>
+<sub>discord.py · aiosqlite · APScheduler · FFmpeg · ElevenLabs · gTTS</sub>
 </div>

@@ -46,6 +46,9 @@ async def play_voice_announcement(
     if guild.voice_client and guild.voice_client.is_connected():
         return
 
+    # Generate TTS before joining so the bot can play immediately on connect
+    tts_buf = await asyncio.get_event_loop().run_in_executor(None, _make_tts, tts_text)
+
     vc: discord.VoiceClient | None = None
     try:
         vc = await voice_channel.connect(timeout=10.0, reconnect=False)
@@ -55,8 +58,7 @@ async def play_voice_announcement(
             while vc.is_playing():
                 await asyncio.sleep(0.3)
 
-        tts_buf = await asyncio.get_event_loop().run_in_executor(None, _make_tts, tts_text)
-        vc.play(discord.FFmpegPCMAudio(tts_buf, pipe=True))
+        vc.play(discord.FFmpegPCMAudio(tts_buf, pipe=True, before_options="-f mp3"))
         while vc.is_playing():
             await asyncio.sleep(0.3)
     except Exception as e:
