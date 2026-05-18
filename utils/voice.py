@@ -1,6 +1,7 @@
 import asyncio
 import io
 import os
+import random
 
 import discord
 from gtts import gTTS
@@ -19,7 +20,7 @@ def _make_tts_elevenlabs(text: str) -> io.BytesIO:
     from elevenlabs import ElevenLabs
     client = ElevenLabs(api_key=config.ELEVENLABS_API_KEY)
     audio = client.text_to_speech.convert(
-        voice_id=config.ELEVENLABS_VOICE_ID,
+        voice_id=random.choice(config.ELEVENLABS_VOICE_IDS),
         text=text,
         model_id="eleven_multilingual_v2",
     )
@@ -29,7 +30,7 @@ def _make_tts_elevenlabs(text: str) -> io.BytesIO:
 
 
 def _make_tts(text: str) -> io.BytesIO:
-    if config.ELEVENLABS_API_KEY and config.ELEVENLABS_VOICE_ID:
+    if config.ELEVENLABS_API_KEY and config.ELEVENLABS_VOICE_IDS:
         try:
             return _make_tts_elevenlabs(text)
         except Exception as e:

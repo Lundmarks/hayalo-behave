@@ -21,14 +21,22 @@ class Tipping(commands.Cog):
     @app_commands.command(name="tip", description="Commend a user and raise their behaviour score by 100")
     @app_commands.describe(
         user="The user to commend",
-        note="Optional note attached to the tip (shown in their history)",
+        note="Note attached to the tip (max 40 characters)",
     )
     async def tip(
         self,
         interaction: discord.Interaction,
         user: discord.Member,
-        note: str | None = None,
+        note: str,
     ) -> None:
+        note = note.strip()
+        if len(note) > 40:
+            await interaction.response.send_message("Note cannot exceed 40 characters.", ephemeral=True)
+            return
+        if not note:
+            await interaction.response.send_message("Note cannot be empty.", ephemeral=True)
+            return
+
         tipper_id = interaction.user.id
         recipient_id = user.id
         guild_id = interaction.guild_id
@@ -52,9 +60,7 @@ class Tipping(commands.Cog):
             return
 
         await db.get_or_create_user(recipient_id, guild_id)
-        reason = f"Tip from {interaction.user.display_name}"
-        if note:
-            reason += f": {note[:100]}"
+        reason = f"Tip from {interaction.user.display_name}: {note}"
         old, new = await db.apply_score_delta(recipient_id, guild_id, GAIN_TIP, reason, "tip")
         await db.record_tip(tipper_id, recipient_id, guild_id, note)
         await db.increment_tips_given(tipper_id, guild_id, today)
@@ -70,10 +76,7 @@ class Tipping(commands.Cog):
                 pass
 
         tips_remaining = tip_limit - tracking["tips_given"] - 1
-        msg = f"👍 Tipped **{user.display_name}**! Their score is now **{new:,} / 12,000**."
-        if note:
-            msg += f"\n> {note}"
-        msg += f"\n{interaction.user.display_name} has **{tips_remaining}** tip(s) remaining today."
+        msg = f"👍 Tipped **{user.display_name}**! Their score is now **{new:,} / 12,000**.\n> {note}\n{interaction.user.display_name} has **{tips_remaining}** tip(s) remaining today."
         await interaction.response.send_message(msg)
 
         tier = check_tier_change(old, new)
@@ -82,10 +85,7 @@ class Tipping(commands.Cog):
             await interaction.channel.send(f"📈 **{user.display_name}** has risen to **{new_label}**!")
 
         if user.voice and user.voice.channel:
-            tts_text = f"Tip for {user.display_name}"
-            if note:
-                tts_text += f". {note}"
-            asyncio.create_task(play_voice_announcement(interaction.guild, user.voice.channel, tts_text, sound_path=TIP_SOUND_PATH))
+            asyncio.create_task(play_voice_announcement(interaction.guild, user.voice.channel, f"Tip for {user.display_name}. {note}", sound_path=TIP_SOUND_PATH))
 
 
 async def setup(bot: commands.Bot) -> None:

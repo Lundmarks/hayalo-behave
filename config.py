@@ -54,7 +54,8 @@ TIERS = [
 ]
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
-ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "")
+_raw_voice_ids = os.getenv("ELEVENLABS_VOICE_IDS", os.getenv("ELEVENLABS_VOICE_ID", ""))
+ELEVENLABS_VOICE_IDS: list[str] = [v.strip() for v in _raw_voice_ids.split(",") if v.strip()]
 
 DM_NOTIFY_THRESHOLD = 200
 TIP_SOUND_PATH = "sounds/tip.mp3"

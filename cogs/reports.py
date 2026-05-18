@@ -32,7 +32,7 @@ class Reports(commands.Cog):
     @app_commands.command(name="report", description="Anonymously report a user for misconduct")
     @app_commands.describe(
         user="The user to report",
-        reason="Reason for the report (max 200 characters)",
+        reason="Reason for the report (max 40 characters)",
     )
     async def report(
         self,
@@ -43,8 +43,11 @@ class Reports(commands.Cog):
         reporter_id = interaction.user.id
         target_id = user.id
         guild_id = interaction.guild_id
-        reason = reason[:200].strip()
+        reason = reason.strip()
 
+        if len(reason) > 40:
+            await interaction.response.send_message("Reason cannot exceed 40 characters.", ephemeral=True)
+            return
         if not reason:
             await interaction.response.send_message("Please provide a reason for the report.", ephemeral=True)
             return
