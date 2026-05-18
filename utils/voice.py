@@ -5,11 +5,36 @@ import os
 import discord
 from gtts import gTTS
 
-def _make_tts(text: str) -> io.BytesIO:
+import config
+
+
+def _make_tts_gtts(text: str) -> io.BytesIO:
     buf = io.BytesIO()
     gTTS(text=text, lang="en").write_to_fp(buf)
     buf.seek(0)
     return buf
+
+
+def _make_tts_elevenlabs(text: str) -> io.BytesIO:
+    from elevenlabs import ElevenLabs
+    client = ElevenLabs(api_key=config.ELEVENLABS_API_KEY)
+    audio = client.text_to_speech.convert(
+        voice_id=config.ELEVENLABS_VOICE_ID,
+        text=text,
+        model_id="eleven_multilingual_v2",
+    )
+    buf = io.BytesIO(b"".join(audio))
+    buf.seek(0)
+    return buf
+
+
+def _make_tts(text: str) -> io.BytesIO:
+    if config.ELEVENLABS_API_KEY and config.ELEVENLABS_VOICE_ID:
+        try:
+            return _make_tts_elevenlabs(text)
+        except Exception as e:
+            print(f"[voice] ElevenLabs TTS failed, falling back to gTTS: {e}")
+    return _make_tts_gtts(text)
 
 
 async def play_voice_announcement(

@@ -53,6 +53,9 @@ TIERS = [
     (11_500, 12_000, "Pinnacle", 5),
 ]
 
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "")
+
 DM_NOTIFY_THRESHOLD = 200
 TIP_SOUND_PATH = "sounds/tip.mp3"
 REPORT_SOUND_PATH = "sounds/report.mp3"
