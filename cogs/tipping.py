@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 
 import db.database as db
-from config import GAIN_TIP, TIMEZONE, DM_NOTIFY_THRESHOLD, TIP_SOUND_PATH
+from config import GAIN_TIP, TIMEZONE, DM_NOTIFY_THRESHOLD, TIP_SOUND_PATH, TIP_REPORT_CHAR_LIMIT
 from utils.score_utils import get_tier, check_tier_change
 from utils.voice import play_voice_announcement
 
@@ -21,7 +21,7 @@ class Tipping(commands.Cog):
     @app_commands.command(name="tip", description="Commend a user and raise their behaviour score by 100")
     @app_commands.describe(
         user="The user to commend",
-        note="Note attached to the tip (max 40 characters)",
+        note=f"Note attached to the tip (max {TIP_REPORT_CHAR_LIMIT} characters)",
     )
     async def tip(
         self,
@@ -30,8 +30,8 @@ class Tipping(commands.Cog):
         note: str,
     ) -> None:
         note = note.strip()
-        if len(note) > 40:
-            await interaction.response.send_message("Note cannot exceed 40 characters.", ephemeral=True)
+        if len(note) > TIP_REPORT_CHAR_LIMIT:
+            await interaction.response.send_message(f"Note cannot exceed {TIP_REPORT_CHAR_LIMIT} characters.", ephemeral=True)
             return
         if not note:
             await interaction.response.send_message("Note cannot be empty.", ephemeral=True)

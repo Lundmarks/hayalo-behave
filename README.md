@@ -106,9 +106,10 @@ SPAM_MESSAGE_LIMIT=5
 SPAM_TIME_WINDOW=5
 ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
 ELEVENLABS_VOICE_IDS=voice_id_1,voice_id_2,voice_id_3
+TIP_REPORT_CHAR_LIMIT=50
 ```
 
-`ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_IDS` are optional. If omitted, TTS falls back to Google TTS (gTTS) automatically. To get these values:
+`ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_IDS` are optional. If omitted, TTS falls back to Google TTS (gTTS) automatically. `TIP_REPORT_CHAR_LIMIT` controls the maximum character length for tip notes and report reasons (default: 50). To get ElevenLabs values:
 
 1. Sign up at [elevenlabs.io](https://elevenlabs.io) and copy your API key from **Profile → API Keys**
 2. Find a voice in the voice library, open it, and copy the voice ID from the URL or detail page
@@ -187,8 +188,8 @@ The `data/` and `sounds/` directories are bind-mounted so the database and sound
 | `/score [@user]` | Score, tier, rank, and progress bar |
 | `/leaderboard` | Top 10 scores in the server |
 | `/history [@user]` | Score history chart for any user |
-| `/tip @user <note>` | Commend a user (+100 to their score) — note required, max 40 characters |
-| `/report @user <reason>` | Report a user (−300 penalty, public announcement) — max 40 characters |
+| `/tip @user <note>` | Commend a user (+100 to their score) — note required, max 50 characters |
+| `/report @user <reason>` | Report a user (−300 penalty, public announcement) — max 50 characters |
 | `/server-stats` | Server-wide score statistics and tier breakdown |
 | `/rules` | How the scoring system works |
 | `/notifications` | Toggle DM score-change notifications on or off |
