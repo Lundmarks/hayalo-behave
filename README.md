@@ -82,7 +82,7 @@ Verify with: `ffmpeg -version`
 ### 1 · Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/hayalo-behave.git
+git clone https://github.com/lundmarks/hayalo-behave.git
 cd hayalo-behave
 ```
 
