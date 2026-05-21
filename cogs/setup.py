@@ -5,7 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 
 import db.database as db
-from config import TIP_SOUND_PATH, REPORT_SOUND_PATH, SPAM_MESSAGE_LIMIT, SPAM_TIME_WINDOW
+from config import TIP_SOUND_PATH, REPORT_SOUND_PATH, SPAM_MESSAGE_LIMIT, SPAM_TIME_WINDOW, LOSS_BOT_CHANNEL
 
 
 def _is_mod(interaction: discord.Interaction) -> bool:
@@ -105,7 +105,7 @@ class Setup(commands.Cog):
         if ch_id:
             ch = interaction.guild.get_channel(ch_id)
             if ch:
-                lines.append(f"✅ Bot commands channel — {ch.mention} (restricted, −{50} outside)")
+                lines.append(f"✅ Bot commands channel — {ch.mention} (restricted, −{LOSS_BOT_CHANNEL} outside)")
             else:
                 lines.append(f"❌ Bot commands channel — not found (ID {ch_id})")
         else:

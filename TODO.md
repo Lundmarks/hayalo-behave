@@ -78,6 +78,4 @@
   - Case-insensitive, whole-word matching to avoid false positives (e.g. "assassin")
   - Cooldown per user so rapid-fire swearing doesn't stack infinitely
   - Both penalties logged to score_events with source `message_content`
-- [ ] −score when a user has reported the same target on more than N distinct calendar days (persistent targeting)
-  - Tracked via a DB query on the reports table; no new table needed
-  - Penalty applied to the reporter, logged with source `repeat_reporter`
+- (future) −score when a user has reported the same target on more than N distinct calendar days (persistent targeting)

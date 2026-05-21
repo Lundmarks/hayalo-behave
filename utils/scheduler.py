@@ -29,6 +29,13 @@ def setup_scheduler(bot: discord.Client) -> AsyncIOScheduler:
         id="weekly_digest",
         replace_existing=True,
     )
+    scheduler.add_job(
+        _nightly_maintenance,
+        CronTrigger(hour=3, minute=0, timezone=TIMEZONE),
+        args=[bot],
+        id="nightly_maintenance",
+        replace_existing=True,
+    )
 
     return scheduler
 
@@ -47,6 +54,13 @@ async def _passive_recovery(bot: discord.Client) -> None:
         except Exception:
             pass
     state.active_this_hour.clear()
+
+
+async def _nightly_maintenance(bot: discord.Client) -> None:
+    try:
+        await db.run_maintenance()
+    except Exception:
+        pass
 
 
 async def _weekly_digest(bot: discord.Client) -> None:

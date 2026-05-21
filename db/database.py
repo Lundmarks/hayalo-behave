@@ -31,8 +31,7 @@ CREATE TABLE IF NOT EXISTS reports (
     target_id   INTEGER NOT NULL,
     guild_id    INTEGER NOT NULL,
     reason      TEXT    NOT NULL,
-    timestamp   TEXT    NOT NULL DEFAULT (datetime('now')),
-    confirmed   INTEGER NOT NULL DEFAULT 0
+    timestamp   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS tips (
@@ -78,6 +77,12 @@ async def init_db() -> None:
     _db.row_factory = aiosqlite.Row
     await _db.executescript(_SCHEMA)
     await _db.commit()
+    # Drop the unused confirmed column from reports if it exists (one-time migration)
+    try:
+        await _db.execute("ALTER TABLE reports DROP COLUMN confirmed")
+        await _db.commit()
+    except Exception:
+        pass
 
 
 def get_db() -> aiosqlite.Connection:
@@ -449,3 +454,16 @@ async def get_biggest_mover_this_week(guild_id: int, positive: bool = True) -> d
     ) as cur:
         row = await cur.fetchone()
     return dict(row) if row else None
+
+
+# ---------------------------------------------------------------------------
+# Maintenance
+# ---------------------------------------------------------------------------
+
+async def run_maintenance() -> None:
+    conn = get_db()
+    await conn.execute("DELETE FROM score_events WHERE datetime(timestamp) < datetime('now', '-8 days')")
+    await conn.execute("DELETE FROM reaction_tracking WHERE datetime(timestamp) < datetime('now', '-2 days')")
+    await conn.execute("DELETE FROM daily_tracking WHERE date < date('now', '-2 days')")
+    await conn.commit()
+    await conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")

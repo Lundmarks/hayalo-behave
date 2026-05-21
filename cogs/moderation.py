@@ -36,7 +36,7 @@ class Moderation(commands.Cog):
                 lines.append(f"`{ts}` **{name}** {sign}{delta} [{e['source']}] — {e['reason'][:60]}")
             embed.description = "\n".join(lines)
 
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @app_commands.command(name="mod-adjust", description="[MOD] Manually adjust a user's behaviour score")
     @app_commands.describe(
@@ -93,7 +93,7 @@ class Moderation(commands.Cog):
                 lines.append(f"`{r['timestamp'][:10]}` **{target_name}** — {r['reason'][:80]}")
             embed.description = "\n".join(lines)
 
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 async def setup(bot: commands.Bot) -> None:

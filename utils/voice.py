@@ -2,11 +2,14 @@ import asyncio
 import io
 import os
 import random
+from collections import defaultdict
 
 import discord
 from gtts import gTTS
 
 import config
+
+_guild_locks: dict[int, asyncio.Lock] = defaultdict(asyncio.Lock)
 
 
 def _make_tts_gtts(text: str) -> io.BytesIO:
@@ -44,29 +47,30 @@ async def play_voice_announcement(
     tts_text: str,
     sound_path: str | None = None,
 ) -> None:
-    if guild.voice_client and guild.voice_client.is_connected():
-        return
+    async with _guild_locks[guild.id]:
+        if guild.voice_client and guild.voice_client.is_connected():
+            return
 
-    # Generate TTS before joining so the bot can play immediately on connect
-    tts_buf = await asyncio.get_event_loop().run_in_executor(None, _make_tts, tts_text)
+        # Generate TTS before joining so the bot can play immediately on connect
+        tts_buf = await asyncio.get_running_loop().run_in_executor(None, _make_tts, tts_text)
 
-    vc: discord.VoiceClient | None = None
-    try:
-        vc = await voice_channel.connect(timeout=10.0, reconnect=False)
+        vc: discord.VoiceClient | None = None
+        try:
+            vc = await voice_channel.connect(timeout=10.0, reconnect=False)
 
-        if sound_path and os.path.isfile(sound_path):
-            vc.play(discord.FFmpegPCMAudio(sound_path))
+            if sound_path and os.path.isfile(sound_path):
+                vc.play(discord.FFmpegPCMAudio(sound_path))
+                while vc.is_playing():
+                    await asyncio.sleep(0.3)
+
+            vc.play(discord.FFmpegPCMAudio(tts_buf, pipe=True, before_options="-f mp3"))
             while vc.is_playing():
                 await asyncio.sleep(0.3)
-
-        vc.play(discord.FFmpegPCMAudio(tts_buf, pipe=True, before_options="-f mp3"))
-        while vc.is_playing():
-            await asyncio.sleep(0.3)
-    except Exception as e:
-        print(f"[voice] failed to play announcement: {e}")
-    finally:
-        try:
-            if vc and vc.is_connected():
-                await vc.disconnect(force=True)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[voice] failed to play announcement: {e}")
+        finally:
+            try:
+                if vc and vc.is_connected():
+                    await vc.disconnect(force=True)
+            except Exception:
+                pass

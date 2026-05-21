@@ -281,7 +281,7 @@ data/
 - Scores are isolated per guild — a user's score in one server does not affect another
 - Swear cooldown is 60 seconds per user — rapid-fire swearing counts as one penalty window
 - Spam and swear cooldowns are in-memory and reset on bot restart
-- All score changes are logged to `score_events` with a reason and source for full auditability
+- Score events are kept for 8 days and then pruned automatically — tip and report history is kept forever
 - The weekly digest runs every Monday at 08:00 Europe/Stockholm
 
 ---

@@ -55,7 +55,7 @@ class Tipping(commands.Cog):
 
         if tracking["tips_given"] >= tip_limit:
             await interaction.response.send_message(
-                f"You have used all **{tip_limit}** of your daily tips. They reset at midnight (GMT+2).",
+                f"You have used all **{tip_limit}** of your daily tips. They reset at midnight Stockholm time.",
             )
             return
 
