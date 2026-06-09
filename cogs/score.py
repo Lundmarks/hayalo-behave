@@ -13,7 +13,7 @@ import db.database as db
 from config import (
     SCORE_MAX, SCORE_MIN, SCORE_START,
     GAIN_TIP, GAIN_FIRST_MESSAGE, GAIN_PASSIVE_HOURLY, GAIN_PASSIVE_DAILY_CAP,
-    GAIN_REACTION, GAIN_REPLY,
+    GAIN_PASSIVE_VOICE_HOURLY, GAIN_REACTION, GAIN_REPLY,
     LOSS_REPORT, LOSS_SPAM, LOSS_SPAM_REPORT, LOSS_BOT_CHANNEL,
     LOSS_BARE_QUESTION, LOSS_SWEAR,
     TIERS,
@@ -178,7 +178,9 @@ class Score(commands.Cog):
             f"+{GAIN_REPLY} — Someone replies to your message\n"
             f"+{GAIN_REACTION} — Someone reacts to your message\n"
             f"+{GAIN_FIRST_MESSAGE} — First message of the day\n"
-            f"+{GAIN_PASSIVE_HOURLY}/hr — Active in the last hour (max +{GAIN_PASSIVE_DAILY_CAP}/day)"
+            f"+{GAIN_PASSIVE_HOURLY}/hr — Sent a message this hour\n"
+            f"+{GAIN_PASSIVE_VOICE_HOURLY}/hr — Sitting in a voice channel\n"
+            f"*(passive gains share a +{GAIN_PASSIVE_DAILY_CAP}/day cap — they stack)*"
         )
         embed.add_field(name="Ways to Earn", value=gains, inline=False)
 

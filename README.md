@@ -49,7 +49,8 @@ It works like Dota 2's behaviour score system: passive gains for activity, comme
 | Trigger | Effect |
 |---|---|
 | First message of the day | +20 |
-| Active in the last hour | +5 (max +50/day) |
+| Sent a message this hour | +25 (passive, max +250/day combined) |
+| Sitting in a voice channel | +20/hr (stacks with above, same cap) |
 | Receiving a reply | +30 |
 | Receiving a reaction | +10–25 depending on type |
 | Someone tips you `/tip` | +100 |
@@ -105,15 +106,20 @@ DISCORD_TOKEN=your_bot_token_here
 SPAM_MESSAGE_LIMIT=5
 SPAM_TIME_WINDOW=5
 ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
-ELEVENLABS_VOICE_IDS=voice_id_1,voice_id_2,voice_id_3
+ELEVENLABS_DEFAULT_VOICE_ID=your_default_voice_id_here
+ELEVENLABS_VOICE_OPTIONS=VoiceName1:voice_id_here,VoiceName2:voice_id_here
 TIP_REPORT_CHAR_LIMIT=50
 ```
 
-`ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_IDS` are optional. If omitted, TTS falls back to Google TTS (gTTS) automatically. `TIP_REPORT_CHAR_LIMIT` controls the maximum character length for tip notes and report reasons (default: 50). To get ElevenLabs values:
+`ELEVENLABS_API_KEY`, `ELEVENLABS_DEFAULT_VOICE_ID`, and `ELEVENLABS_VOICE_OPTIONS` are optional. If omitted, TTS falls back to Google TTS (gTTS) automatically. `TIP_REPORT_CHAR_LIMIT` controls the maximum character length for tip notes and report reasons (default: 50).
+
+- `ELEVENLABS_DEFAULT_VOICE_ID` — the voice used for all standard announcements
+- `ELEVENLABS_VOICE_OPTIONS` — comma-separated `Name:voice_id` pairs; these become selectable in `/tip` and `/report` via Discord autocomplete
+
+To get ElevenLabs values:
 
 1. Sign up at [elevenlabs.io](https://elevenlabs.io) and copy your API key from **Profile → API Keys**
 2. Find a voice in the voice library, open it, and copy the voice ID from the URL or detail page
-3. Add one or more comma-separated voice IDs — a random one is picked for each announcement
 
 > **Note:** Community/library voices require a paid ElevenLabs subscription. The default pre-made voices (e.g. `Adam`, `Rachel`) work on the free tier. If the API call fails for any reason, TTS silently falls back to gTTS.
 
@@ -188,8 +194,9 @@ The `data/` and `sounds/` directories are bind-mounted so the database and sound
 | `/score [@user]` | Score, tier, rank, and progress bar |
 | `/leaderboard` | Top 10 scores in the server |
 | `/history [@user]` | Score history chart for any user |
-| `/tip @user <note>` | Commend a user (+100 to their score) — note required, max 50 characters |
-| `/report @user <reason>` | Report a user (−300 penalty, public announcement) — max 50 characters |
+| `/tip @user <note> [voice]` | Commend a user (+100 to their score) — optional voice selection for the announcement |
+| `/report @user <reason> [voice]` | Report a user (−300 penalty, public announcement) — optional voice selection |
+| `/report-stats` | Report leaderboard — most reported, most active reporters, totals |
 | `/server-stats` | Server-wide score statistics and tier breakdown |
 | `/rules` | How the scoring system works |
 | `/notifications` | Toggle DM score-change notifications on or off |
@@ -221,7 +228,9 @@ Mod commands require the **Manage Server** permission.
 | Receiving a 🔥 reaction | +15 |
 | Receiving any other reaction | +10 |
 | First message of the day | +20 |
-| Active in the last hour | +5 (max +50/day) |
+| Sent a message this hour | +25/hr (passive) |
+| Sitting in a voice channel | +20/hr (passive) |
+| Passive daily cap | +250/day (message + voice combined) |
 
 ### Losses
 
@@ -244,7 +253,7 @@ Mod commands require the **Manage Server** permission.
 | Good | 9,000–11,499 | 4 |
 | Pinnacle | 11,500–12,000 | 5 |
 
-Daily tip limits reset at 00:00 GMT+2. Tiers are cosmetic and affect tip limits only.
+Daily tip limits reset at midnight Stockholm time. Tiers are cosmetic and affect tip limits only.
 
 ---
 
