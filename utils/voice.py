@@ -1,7 +1,6 @@
 import asyncio
 import io
 import os
-import random
 from collections import defaultdict
 
 import discord
@@ -19,11 +18,11 @@ def _make_tts_gtts(text: str) -> io.BytesIO:
     return buf
 
 
-def _make_tts_elevenlabs(text: str) -> io.BytesIO:
+def _make_tts_elevenlabs(text: str, voice_id: str) -> io.BytesIO:
     from elevenlabs import ElevenLabs
     client = ElevenLabs(api_key=config.ELEVENLABS_API_KEY)
     audio = client.text_to_speech.convert(
-        voice_id=random.choice(config.ELEVENLABS_VOICE_IDS),
+        voice_id=voice_id,
         text=text,
         model_id="eleven_multilingual_v2",
     )
@@ -32,10 +31,11 @@ def _make_tts_elevenlabs(text: str) -> io.BytesIO:
     return buf
 
 
-def _make_tts(text: str) -> io.BytesIO:
-    if config.ELEVENLABS_API_KEY and config.ELEVENLABS_VOICE_IDS:
+def _make_tts(text: str, voice_id: str | None = None) -> io.BytesIO:
+    resolved = voice_id or config.ELEVENLABS_DEFAULT_VOICE_ID
+    if config.ELEVENLABS_API_KEY and resolved:
         try:
-            return _make_tts_elevenlabs(text)
+            return _make_tts_elevenlabs(text, resolved)
         except Exception as e:
             print(f"[voice] ElevenLabs TTS failed, falling back to gTTS: {e}")
     return _make_tts_gtts(text)
@@ -46,13 +46,14 @@ async def play_voice_announcement(
     voice_channel: discord.VoiceChannel,
     tts_text: str,
     sound_path: str | None = None,
+    voice_id: str | None = None,
 ) -> None:
     async with _guild_locks[guild.id]:
         if guild.voice_client and guild.voice_client.is_connected():
             return
 
         # Generate TTS before joining so the bot can play immediately on connect
-        tts_buf = await asyncio.get_running_loop().run_in_executor(None, _make_tts, tts_text)
+        tts_buf = await asyncio.get_running_loop().run_in_executor(None, _make_tts, tts_text, voice_id)
 
         vc: discord.VoiceClient | None = None
         try:

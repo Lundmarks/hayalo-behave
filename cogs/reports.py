@@ -5,6 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import config as config_module
 import db.database as db
 from config import REPORT_SOUND_PATH, TIP_REPORT_CHAR_LIMIT
 from utils.voice import play_voice_announcement
@@ -35,7 +36,15 @@ _REPORT_QUIPS = [
     "🎰 *Pangolier has seen your behaviour and folded his cards.*",
 ]
 from config import LOSS_REPORT, LOSS_SPAM_REPORT
-from utils.score_utils import check_tier_change
+from utils.score_utils import check_tier_change, get_tier
+
+
+async def _voice_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    return [
+        app_commands.Choice(name=name, value=name)
+        for name in config_module.ELEVENLABS_VOICE_OPTIONS
+        if current.lower() in name.lower()
+    ][:25]
 
 
 class Reports(commands.Cog):
@@ -46,12 +55,15 @@ class Reports(commands.Cog):
     @app_commands.describe(
         user="The user to report",
         reason=f"Reason for the report (max {TIP_REPORT_CHAR_LIMIT} characters)",
+        voice="Voice to use for the announcement (optional)",
     )
+    @app_commands.autocomplete(voice=_voice_autocomplete)
     async def report(
         self,
         interaction: discord.Interaction,
         user: discord.Member,
         reason: str,
+        voice: str = "",
     ) -> None:
         reporter_id = interaction.user.id
         target_id = user.id
@@ -120,17 +132,56 @@ class Reports(commands.Cog):
                 pass
 
         if user.voice and user.voice.channel:
+            voice_id = config_module.ELEVENLABS_VOICE_OPTIONS.get(voice) if voice else None
             asyncio.create_task(
                 play_voice_announcement(
                     interaction.guild, user.voice.channel,
                     f"{user.display_name} has been reported. Reason: {reason}",
                     sound_path=REPORT_SOUND_PATH,
+                    voice_id=voice_id,
                 )
             )
 
         await interaction.response.send_message(
             "Your report has been submitted anonymously. Thank you.", ephemeral=True
         )
+
+
+    @app_commands.command(name="report-stats", description="Overview of server report history")
+    async def report_stats(self, interaction: discord.Interaction) -> None:
+        stats = await db.get_report_stats(interaction.guild_id)
+
+        medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
+
+        embed = discord.Embed(title="📋 Report Hall of Shame", color=discord.Color.dark_red())
+        embed.add_field(
+            name="📊 Totals",
+            value=f"**{stats['total']:,}** reports all-time\n**{stats['last_7d']:,}** in the last 7 days",
+            inline=False,
+        )
+
+        if stats["most_reported"]:
+            lines = []
+            for i, row in enumerate(stats["most_reported"]):
+                member = interaction.guild.get_member(row["target_id"])
+                name = member.display_name if member else f"User {row['target_id']}"
+                user_data = await db.get_user(row["target_id"], interaction.guild_id)
+                tier_label = get_tier(user_data["score"])[1] if user_data else "?"
+                lines.append(f"{medals[i]} **{name}** — {row['cnt']} reports *(currently {tier_label})*")
+            embed.add_field(name="🎯 Most Reported", value="\n".join(lines), inline=False)
+
+        if stats["top_reporters"]:
+            lines = []
+            for i, row in enumerate(stats["top_reporters"]):
+                member = interaction.guild.get_member(row["reporter_id"])
+                name = member.display_name if member else f"User {row['reporter_id']}"
+                lines.append(f"{medals[i]} **{name}** — {row['cnt']} filed")
+            embed.add_field(name="🕵️ Most Active Reporters", value="\n".join(lines), inline=False)
+
+        if stats["total"] == 0:
+            embed.description = "*No reports on record. This server is either very well-behaved or very unobserved.*"
+
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot: commands.Bot) -> None:

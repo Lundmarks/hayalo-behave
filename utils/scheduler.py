@@ -7,7 +7,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 import db.database as db
 import utils.state as state
-from config import GAIN_PASSIVE_HOURLY, GAIN_PASSIVE_DAILY_CAP, TIMEZONE
+from config import GAIN_PASSIVE_HOURLY, GAIN_PASSIVE_DAILY_CAP, GAIN_PASSIVE_VOICE_HOURLY, TIMEZONE
 
 TZ = ZoneInfo(TIMEZONE)
 
@@ -42,18 +42,33 @@ def setup_scheduler(bot: discord.Client) -> AsyncIOScheduler:
 
 async def _passive_recovery(bot: discord.Client) -> None:
     today = datetime.now(TZ).strftime("%Y-%m-%d")
-    for user_id, guild_id in list(state.active_this_hour):
+
+    # Snapshot anyone currently sitting in a voice channel
+    for guild in bot.guilds:
+        for vc in guild.voice_channels:
+            for member in vc.members:
+                if not member.bot:
+                    state.in_voice_this_hour.add((member.id, guild.id))
+
+    all_users = state.active_this_hour | state.in_voice_this_hour
+    for user_id, guild_id in list(all_users):
         try:
             tracking = await db.get_today_tracking(user_id, guild_id, today)
             already = tracking["passive_earned_today"]
             if already >= GAIN_PASSIVE_DAILY_CAP:
                 continue
-            amount = min(GAIN_PASSIVE_HOURLY, GAIN_PASSIVE_DAILY_CAP - already)
+            amount = 0
+            if (user_id, guild_id) in state.active_this_hour:
+                amount += GAIN_PASSIVE_HOURLY
+            if (user_id, guild_id) in state.in_voice_this_hour:
+                amount += GAIN_PASSIVE_VOICE_HOURLY
+            amount = min(amount, GAIN_PASSIVE_DAILY_CAP - already)
             await db.apply_score_delta(user_id, guild_id, amount, "Passive hourly recovery", "passive")
             await db.increment_passive_earned(user_id, guild_id, today, amount)
         except Exception:
             pass
     state.active_this_hour.clear()
+    state.in_voice_this_hour.clear()
 
 
 async def _nightly_maintenance(bot: discord.Client) -> None:

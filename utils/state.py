@@ -11,3 +11,6 @@ swear_cooldowns: dict[int, float] = {}
 
 # (user_id, guild_id) pairs that sent at least one message this hour
 active_this_hour: set[tuple[int, int]] = set()
+
+# (user_id, guild_id) pairs present in a voice channel this hour
+in_voice_this_hour: set[tuple[int, int]] = set()

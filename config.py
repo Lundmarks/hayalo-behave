@@ -16,8 +16,9 @@ SCORE_MIN = 0
 
 GAIN_TIP = 100
 GAIN_FIRST_MESSAGE = 20
-GAIN_PASSIVE_HOURLY = 5
-GAIN_PASSIVE_DAILY_CAP = 50
+GAIN_PASSIVE_HOURLY = 25
+GAIN_PASSIVE_DAILY_CAP = 250
+GAIN_PASSIVE_VOICE_HOURLY = 20
 GAIN_REACTION = 10
 GAIN_REACTION_WEIGHTED: dict[str, int] = {
     "⭐": 25,
@@ -55,8 +56,16 @@ TIERS = [
 ]
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
-_raw_voice_ids = os.getenv("ELEVENLABS_VOICE_IDS", os.getenv("ELEVENLABS_VOICE_ID", ""))
-ELEVENLABS_VOICE_IDS: list[str] = [v.strip() for v in _raw_voice_ids.split(",") if v.strip()]
+ELEVENLABS_DEFAULT_VOICE_ID = os.getenv("ELEVENLABS_DEFAULT_VOICE_ID", "")
+
+# Format: "Name1:voice_id1,Name2:voice_id2,..."
+_raw_voice_options = os.getenv("ELEVENLABS_VOICE_OPTIONS", "")
+ELEVENLABS_VOICE_OPTIONS: dict[str, str] = {}
+for _entry in _raw_voice_options.split(","):
+    _entry = _entry.strip()
+    if ":" in _entry:
+        _name, _vid = _entry.split(":", 1)
+        ELEVENLABS_VOICE_OPTIONS[_name.strip()] = _vid.strip()
 
 DM_NOTIFY_THRESHOLD = 200
 TIP_SOUND_PATH = "sounds/tip.mp3"

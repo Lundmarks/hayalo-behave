@@ -6,12 +6,21 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+import config as config_module
 import db.database as db
 from config import GAIN_TIP, TIMEZONE, DM_NOTIFY_THRESHOLD, TIP_SOUND_PATH, TIP_REPORT_CHAR_LIMIT
 from utils.score_utils import get_tier, check_tier_change
 from utils.voice import play_voice_announcement
 
 TZ = ZoneInfo(TIMEZONE)
+
+
+async def _voice_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    return [
+        app_commands.Choice(name=name, value=name)
+        for name in config_module.ELEVENLABS_VOICE_OPTIONS
+        if current.lower() in name.lower()
+    ][:25]
 
 
 class Tipping(commands.Cog):
@@ -22,12 +31,15 @@ class Tipping(commands.Cog):
     @app_commands.describe(
         user="The user to commend",
         note=f"Note attached to the tip (max {TIP_REPORT_CHAR_LIMIT} characters)",
+        voice="Voice to use for the announcement (optional)",
     )
+    @app_commands.autocomplete(voice=_voice_autocomplete)
     async def tip(
         self,
         interaction: discord.Interaction,
         user: discord.Member,
         note: str,
+        voice: str = "",
     ) -> None:
         note = note.strip()
         if len(note) > TIP_REPORT_CHAR_LIMIT:
@@ -85,7 +97,8 @@ class Tipping(commands.Cog):
             await interaction.channel.send(f"📈 **{user.display_name}** has risen to **{new_label}**!")
 
         if user.voice and user.voice.channel:
-            asyncio.create_task(play_voice_announcement(interaction.guild, user.voice.channel, f"Tip for {user.display_name}. {note}", sound_path=TIP_SOUND_PATH))
+            voice_id = config_module.ELEVENLABS_VOICE_OPTIONS.get(voice) if voice else None
+            asyncio.create_task(play_voice_announcement(interaction.guild, user.voice.channel, f"Tip for {user.display_name}. {note}", sound_path=TIP_SOUND_PATH, voice_id=voice_id))
 
 
 async def setup(bot: commands.Bot) -> None:

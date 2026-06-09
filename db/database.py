@@ -371,6 +371,37 @@ async def record_report(reporter_id: int, target_id: int, guild_id: int, reason:
     await conn.commit()
 
 
+async def get_report_stats(guild_id: int) -> dict:
+    conn = get_db()
+    async with conn.execute(
+        "SELECT COUNT(*) FROM reports WHERE guild_id = ?", (guild_id,)
+    ) as cur:
+        total = (await cur.fetchone())[0]
+    async with conn.execute(
+        "SELECT COUNT(*) FROM reports WHERE guild_id = ? AND datetime(timestamp) > datetime('now', '-7 days')",
+        (guild_id,)
+    ) as cur:
+        last_7d = (await cur.fetchone())[0]
+    async with conn.execute(
+        """SELECT target_id, COUNT(*) AS cnt FROM reports
+           WHERE guild_id = ? GROUP BY target_id ORDER BY cnt DESC LIMIT 5""",
+        (guild_id,)
+    ) as cur:
+        most_reported = [dict(r) for r in await cur.fetchall()]
+    async with conn.execute(
+        """SELECT reporter_id, COUNT(*) AS cnt FROM reports
+           WHERE guild_id = ? GROUP BY reporter_id ORDER BY cnt DESC LIMIT 5""",
+        (guild_id,)
+    ) as cur:
+        top_reporters = [dict(r) for r in await cur.fetchall()]
+    return {
+        "total": total,
+        "last_7d": last_7d,
+        "most_reported": most_reported,
+        "top_reporters": top_reporters,
+    }
+
+
 async def get_pending_reports(guild_id: int) -> list[dict]:
     conn = get_db()
     async with conn.execute(
