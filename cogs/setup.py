@@ -30,7 +30,7 @@ class Setup(commands.Cog):
         bot_channel: discord.TextChannel | None = None,
     ) -> None:
         if not _is_mod(interaction):
-            await interaction.response.send_message("You need Manage Server permission.", ephemeral=False)
+            await interaction.response.send_message("You need Manage Server permission.", ephemeral=True)
             return
 
         await db.upsert_guild_config(
@@ -46,15 +46,15 @@ class Setup(commands.Cog):
             f"  Digest channel: {digest_channel.mention}",
             f"  Bot commands channel: {bot_channel.mention if bot_channel else 'no restriction'}",
         ]
-        await interaction.response.send_message("\n".join(lines), ephemeral=False)
+        await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
     @app_commands.command(name="bot-check", description="[MOD] Verify the bot configuration is correct")
     async def check_config(self, interaction: discord.Interaction) -> None:
         if not _is_mod(interaction):
-            await interaction.response.send_message("You need Manage Server permission.", ephemeral=False)
+            await interaction.response.send_message("You need Manage Server permission.", ephemeral=True)
             return
 
-        await interaction.response.defer(ephemeral=False)
+        await interaction.response.defer(ephemeral=True)
         lines = ["**Bot Configuration Check**", ""]
 
         # Database
@@ -63,13 +63,13 @@ class Setup(commands.Cog):
             lines.append("✅ Database — responding")
         except Exception as e:
             lines.append(f"❌ Database — {e}")
-            await interaction.followup.send("\n".join(lines), ephemeral=False)
+            await interaction.followup.send("\n".join(lines), ephemeral=True)
             return
 
         config = await db.get_guild_config(interaction.guild_id)
         if not config:
             lines.append("⚠️  Setup not run yet — use `/setup` to configure channels")
-            await interaction.followup.send("\n".join(lines), ephemeral=False)
+            await interaction.followup.send("\n".join(lines), ephemeral=True)
             return
 
         me = interaction.guild.me
@@ -136,7 +136,7 @@ class Setup(commands.Cog):
         # Spam config
         lines.append(f"✅ Spam detection — {SPAM_MESSAGE_LIMIT} messages / {SPAM_TIME_WINDOW}s window")
 
-        await interaction.followup.send("\n".join(lines), ephemeral=False)
+        await interaction.followup.send("\n".join(lines), ephemeral=True)
 
 
 async def setup(bot: commands.Bot) -> None:

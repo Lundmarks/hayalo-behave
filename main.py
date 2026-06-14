@@ -17,6 +17,9 @@ class BehaviourCommandTree(app_commands.CommandTree):
     """Intercepts every slash command to enforce the bot-commands channel restriction."""
 
     async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
+        if interaction.type == discord.InteractionType.autocomplete:
+            return True
+
         if not interaction.guild_id:
             return True
 
